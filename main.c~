@@ -1,0 +1,522 @@
+#include <C8051F060.h>                 // SFR declarations
+
+//-----------------------------------------------------------------------------
+// 16-bit SFR Definitions for 'F06x
+//-----------------------------------------------------------------------------
+
+sfr16 RCAP2    = 0xCA;                 // Timer2 capture/reload
+sfr16 TMR2     = 0xCC;                 // Timer2
+sfr16 RCAP3    = 0xCA;                 // Timer3 reload value
+sfr16 TMR3     = 0xCC;                 // Timer3 counter
+
+sfr16 ADC0     = 0xBE;                 // ADC0 Data
+sfr16 ADC1     = 0xBE;                 // ADC1 Data
+
+#define SAMP_RATE          16000         // ADC sample rate in Hz
+
+//-----------------------------------------------------------------------------
+// Global Constants
+//-----------------------------------------------------------------------------
+
+#define BAUDRATE     115200            // Baud rate of UART in bps
+
+// SYSTEMCLOCK = System clock frequency in Hz
+#define SYSTEMCLOCK       12000000L
+#define SYSCLK       12000000L
+
+//-----------------------------------------------------------------------------
+// Global Variables
+//-----------------------------------------------------------------------------
+
+#define UART0_TBUF_SIZE 32
+#define UART0_RBUF_SIZE 4
+typedef struct u0_tbuf_st
+{
+    unsigned char in;
+    unsigned char out;
+    unsigned char  buf [UART0_TBUF_SIZE];
+}UART0_TBUF_ST;
+
+typedef struct u0_rbuf_st
+{
+    unsigned char in;
+    unsigned char out;
+    unsigned char  buf [UART0_RBUF_SIZE];
+}UART0_RBUF_ST;
+
+static	unsigned char	uart0_tx_rst	=	1;
+
+static unsigned int adc0_value;
+static unsigned int adc1_value;
+
+static	UART0_RBUF_ST	uart0_rbuf	=	{ 0, 0, };
+static	UART0_TBUF_ST	uart0_tbuf	=	{ 0, 0, };
+#define	UART0_RREADY	(uart0_rbuf.in != uart0_rbuf.out)
+#define	UART0_RBUFLEN	((unsigned char)(uart0_rbuf.in - uart0_rbuf.out))
+#define	UART0_TBUFLEN	((unsigned char)(uart0_tbuf.in - uart0_tbuf.out))
+
+
+//------------------------------------------------------------------------------------
+// Function PROTOTYPES
+//------------------------------------------------------------------------------------
+void SYSCLK_Init (void);
+void UART0_Init (void);
+void PORT_Init (void);
+void ADC0_Init (void);
+void ADC1_Init (void);
+void DAC0_Init (void);
+void DAC1_Init (void);
+void Timer3_Init (int counts);
+
+//-----------------------------------------------------------------------------
+// UART0_Init   Variable baud rate, Timer 2, 8-N-1
+//-----------------------------------------------------------------------------
+//
+// Return Value : None
+// Parameters   : None
+//
+// Configure UART0 for operation at <BAUDRATE> 8-N-1 using Timer2 as
+// baud rate source.
+//
+//-----------------------------------------------------------------------------
+void UART0_Init (void)
+{
+
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+
+    SFRPAGE = CONFIG_PAGE;              // Set SFR page
+
+    XBR0     = 0x04;                    // Enable UART0
+    XBR1     = 0x00;
+    XBR2     = 0x40;                    // Enable crossbar and weak pull-up
+
+    P0MDOUT |= 0x01;                    // Set TX pin to push-pull
+
+    SFRPAGE = TMR2_PAGE;
+
+    TMR2CN = 0x00;                      // Timer in 16-bit auto-reload up timer
+    // mode
+    TMR2CF = 0x08;                      // SYSCLK is time base; no output;
+    // up count only
+    RCAP2 = - ((long) SYSTEMCLOCK/BAUDRATE/16);
+    RCAP2 = -20L;
+    TMR2 = RCAP2;
+    TR2= 1;                             // Start Timer2
+
+    SFRPAGE = UART0_PAGE;
+
+    SCON0 = 0x50;                       // 8-bit variable baud rate;
+    // 9th bit ignored; RX enabled
+    // clear all flags
+    SSTA0 = 0x15;                       // Clear all flags; enable baud rate
+    // doubler (not relevant for these
+    // timers);
+    // Use Timer2 as RX and TX baud rate
+    // source;
+    ES0 = 1;
+    IP |= 0x10;
+
+    uart0_tbuf.in = 0;
+    uart0_tbuf.out = 0;
+    uart0_tx_rst = 1;
+
+    uart0_rbuf.in = 0;
+    uart0_rbuf.out = 0;
+
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
+}
+
+//-----------------------------------------------------------------------------
+// Interrupt Service Routines
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// UART0_Interrupt
+//-----------------------------------------------------------------------------
+//
+// This routine is invoked whenever a character is entered or displayed on the
+// Hyperterminal.
+//
+//-----------------------------------------------------------------------------
+void UART0_Interrupt (void) interrupt 4
+{
+    UART0_RBUF_ST *p;
+    SFRPAGE = UART0_PAGE;
+    if (RI0 == 1)
+    {
+	RI0 = 0;
+	p = (UART0_RBUF_ST*)&uart0_rbuf;
+	if (((p->in - p->out) & ~(UART0_RBUF_SIZE-1)) == 0){
+	    p->buf [p->in & (UART0_RBUF_SIZE-1)] = SBUF0;
+	    p->in++;
+	}
+    }
+    if (TI0 == 1)           // Check if transmit flag is set
+    {
+	TI0 = 0;
+	p = (UART0_RBUF_ST*)&uart0_tbuf;
+	if (p->in != p->out) {
+	    SBUF0 = p->buf [p->out & (UART0_TBUF_SIZE-1)];
+	    p->out++;
+	    uart0_tx_rst = 0;
+	}else {
+	    uart0_tx_rst = 1;
+	}
+    }
+}
+
+void UART0_Putchar(unsigned char c)
+{
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+    UART0_TBUF_ST *p = &uart0_tbuf;
+
+    SFRPAGE = UART0_PAGE;
+    EA = 0;
+    if (uart0_tx_rst) {
+	TI0 = 0;
+	uart0_tx_rst = 0;
+	SBUF0 = c;
+    }
+    else {
+	p->buf [p->in & (UART0_TBUF_SIZE - 1)] = c;
+	p->in++;
+    }
+    EA = 1;
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
+}
+
+unsigned char UART0_Getchar(void)
+{
+    unsigned char tmp;
+    UART0_RBUF_ST *p = &uart0_rbuf;
+    EA = 0;
+    tmp = (p->buf [(p->out++) & (UART0_RBUF_SIZE - 1)]);
+    EA = 1;
+    return tmp;
+}
+
+
+unsigned char adc0_cnt = 0;
+long adc0_sum;
+//-----------------------------------------------------------------------------
+// ADC0 Interrupt
+//-----------------------------------------------------------------------------
+//
+// This routine is invoked whenever ADC0 converstion complet
+//
+//-----------------------------------------------------------------------------
+void ADC0_Interrupt (void) interrupt 13
+{
+    SFRPAGE = ADC0_PAGE;                // Switch to ADC0 Page
+
+    adc0_sum += ADC0;
+    adc0_cnt++;
+    if (adc0_cnt == 16) {
+	UART0_Putchar(0x80);
+	UART0_Putchar((adc0_sum >> 14) & 0x7F);
+	UART0_Putchar((adc0_sum >> 7) & 0x7F);
+	UART0_Putchar((adc0_sum >> 0) & 0x7F);
+	adc0_cnt = 0;
+	adc0_sum = 0;
+    }
+    AD0INT = 0 ;
+}
+unsigned char adc1_cnt = 0;
+long adc1_sum = 0;
+//-----------------------------------------------------------------------------
+// ADC1 Interrupt
+//-----------------------------------------------------------------------------
+//
+// This routine is invoked whenever ADC1 converstion complet
+//
+//-----------------------------------------------------------------------------
+unsigned short adc1_tmp[16];
+void ADC1_Interrupt (void) interrupt 15
+{
+    char i, j;
+    unsigned short tmp;
+    SFRPAGE = ADC1_PAGE;                // Switch to ADC1 Page
+    //  adc1_sum += ADC1;
+    adc1_tmp[adc1_cnt] = ADC1;
+    adc1_cnt++;
+    if (adc1_cnt == 16) {
+	for (i = 15; i >= 0; i--) {
+	    for (j = 0; j < i; j++) {
+		if (adc1_tmp[j] > adc1_tmp[j+1]) {
+		    tmp = adc1_tmp[j];
+		    adc1_tmp[j] = adc1_tmp[j + 1];
+		    adc1_tmp[j + 1] = tmp;
+		}
+	    }
+	}
+	for ( i = 4; i < 12; i++) adc1_sum += adc1_tmp[i];
+	adc1_sum = (adc1_sum << 1);
+	UART0_Putchar(0x81);
+	UART0_Putchar((adc1_sum >> 14) & 0x7F);
+	UART0_Putchar((adc1_sum >> 7) & 0x7F);
+	UART0_Putchar((adc1_sum >> 0) & 0x7F);
+	adc1_cnt = 0;
+	adc1_sum = 0;
+    }
+    AD1INT = 0 ;
+}
+//-----------------------------------------------------------------------------
+// OSCILLATOR_Init
+//-----------------------------------------------------------------------------
+//
+// Return Value : None
+// Parameters   : None
+//
+// This function initializes the system clock to use an external 22.1184MHz
+// crystal.
+//
+//-----------------------------------------------------------------------------
+void OSCILLATOR_Init (void)
+{
+    int i;                              // Software timer
+
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+
+    SFRPAGE = CONFIG_PAGE;              // Set SFR page
+
+    OSCICN = 0x80;                      // Set internal oscillator to run
+    // at its slowest frequency
+
+    CLKSEL = 0x00;                      // Select the internal osc. as
+    // the SYSTEMCLOCK source
+
+    // Initialize external crystal oscillator to use 22.1184 MHz crystal
+
+    OSCXCN = 0x67;                      // Enable external crystal osc.
+    for (i=0; i < 256; i++);            // Wait at least 1ms
+
+    while (!(OSCXCN & 0x80));           // Wait for crystal osc to settle
+
+    CLKSEL = 0x01;
+    // Select external crystal as SYSTEMCLOCK source
+
+    OSCICN = 0x00;                      // disable internal oscillator
+
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
+}
+
+//------------------------------------------------------------------------------------
+// Timer3_Init
+//------------------------------------------------------------------------------------
+//
+// Configure Timer3 to auto-reload and generate ADC sample rate
+// specified by <counts> using SYSCLK as its time base.
+//
+void Timer3_Init (int counts)
+{
+    char old_SFRPAGE = SFRPAGE;
+
+    SFRPAGE = TMR3_PAGE;                // Switch to Timer 3 page
+
+    TMR3CN = 0x00;                      // Stop Timer3; Clear TF3;
+    TMR3CF = 0x08;                      // use SYSCLK as timebase
+    RCAP3   = -counts;                  // Init reload values
+    TMR3    = 0xffff;                   // set to reload immediately
+    TR3 = 1;                            // start Timer3
+
+    SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
+}
+
+
+//-----------------------------------------------------------------------------
+// ADC0_Init
+//-----------------------------------------------------------------------------
+void ADC0_Init (void)
+{
+    char old_SFRPAGE = SFRPAGE;
+    int i;
+
+    SFRPAGE = ADC0_PAGE;                // Switch to ADC0 Page
+
+    ADC0CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
+    // track 16 SAR clocks before data conversion
+    // upon Timer3 OV.  Enable ADC0
+
+    REF0CN = 0x02;                      // turn on bias generator, turn off internal reference.
+
+    for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
+
+    AMX0SL = 0x00;                      // Single-ended mode
+
+    ADC0CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
+
+    EIE1 |= 0x80;		/* Enable ADC0 interrupt */
+    SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
+}
+//-----------------------------------------------------------------------------
+// ADC1_Init
+//-----------------------------------------------------------------------------
+void ADC1_Init (void)
+{
+    char old_SFRPAGE = SFRPAGE;
+    int i;
+
+    SFRPAGE = ADC1_PAGE;                // Switch to ADC0 Page
+
+    ADC1CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
+    // track 16 SAR clocks before data conversion
+    // upon Timer3 OV.  Enable ADC0
+
+    REF1CN = 0x02;                      // turn on bias generator, turn of internal reference.
+
+    for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
+
+    ADC1CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
+
+    EIE2 |= 0x02;			/* Enable ADC0 interrupt */
+    SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
+}
+
+//-----------------------------------------------------------------------------
+// DAC0_Init
+//-----------------------------------------------------------------------------
+//
+// Return Value : None
+// Parameters   : None
+//
+// Configure DAC0 to update on Timer4 overflows and enable the the VREF buffer.
+//
+//-----------------------------------------------------------------------------
+
+void DAC0_Init(void)
+{
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+    adc0_value = 0x81E0;
+
+    SFRPAGE = DAC0_PAGE;
+   
+    DAC0CN = 0x84;                      // Enable DAC0 in left-justified mode
+
+    SFRPAGE = ADC2_PAGE;
+
+    REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
+    // the Bias Generator
+
+    DAC0L = adc0_value & 0xFF;
+    DAC0H = (adc0_value >> 8) & 0xFF;
+
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+}
+
+//-----------------------------------------------------------------------------
+// DAC1_Init
+//-----------------------------------------------------------------------------
+//
+// Return Value : None
+// Parameters   : None
+//
+// Configure DAC1 to update on Timer4 overflows and enable the the VREF buffer.
+//
+//-----------------------------------------------------------------------------
+
+void DAC1_Init(void)
+{
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+
+    adc1_value = 0x100;
+
+    SFRPAGE = DAC1_PAGE;
+   
+    DAC1CN = 0x84;                      // Enable DAC1 in left-justified mode
+
+    SFRPAGE = ADC2_PAGE;
+
+    REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
+    // the Bias Generator
+
+    DAC1L = adc1_value & 0xFF;
+    DAC1H = (adc1_value >> 8) & 0xFF;
+
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+}
+
+void Set_DACs(void)
+{
+    char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+   
+    // Add a DC bias to change the the rails from a bipolar (-32768 to 32767)
+    // to unipolar (0 to 65535)
+    // Note: the XOR with 0x8000 translates the bipolar quantity into
+    // a unipolar quantity.
+   
+
+    SFRPAGE = DAC0_PAGE;
+    //   DAC0 = 0x8000 ^ 0x4600;           // Write to DAC0
+
+    DAC0L = adc0_value & 0xFF;
+    DAC0H = (adc0_value >> 8) & 0xFF;
+
+    SFRPAGE = DAC1_PAGE;
+    //   DAC1 = 0x8000 ^ 0xa600;           // Write to DAC1
+    DAC1L = adc1_value & 0xFF;
+    DAC1H = (adc1_value >> 8) & 0xFF;
+
+    SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+}
+
+//-----------------------------------------------------------------------------
+// End Of File
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// MAIN Routine
+//-----------------------------------------------------------------------------
+void main (void) 
+{
+    char state;
+    unsigned int buf;
+    WDTCN = 0xDE;                       // disable watchdog timer
+    WDTCN = 0xAD;
+
+    SFRPAGE = CONFIG_PAGE;
+
+    DAC0_Init ();                       // Initialize DAC0
+    DAC1_Init ();                       // Initialize DAC1   
+    OSCILLATOR_Init ();                 // Initialize oscillator
+
+    UART0_Init ();                      // Initialize UART0
+
+    Timer3_Init (SYSCLK/SAMP_RATE);        // Init Timer3 for 16ksps sample rate
+
+    ADC0_Init();
+    ADC1_Init();
+
+    Set_DACs();
+
+    EA = 1;                             // Enable global interrupts
+
+    while(1) {
+	if ( UART0_RREADY ) {
+	    buf = UART0_Getchar();
+	    switch(state) {
+	    case 1:
+		adc0_value = buf << 9UL;
+		state++;
+		break;
+	    case 2:
+		adc0_value |= (buf << 2UL);
+		Set_DACs();
+		state = 0;
+		break;
+	    case 3:
+		adc1_value = buf << 9UL;
+		state++;
+		break;
+	    case 4:
+		adc1_value |= (buf << 2UL);
+		state = 0;
+		Set_DACs();
+		break;
+	    }
+	    if ( buf == 0x80 ) state = 1;
+	    if ( buf == 0x81 ) state = 3;
+	}
+    }
+}
