@@ -12,13 +12,13 @@ sfr16 TMR3     = 0xCC;                 // Timer3 counter
 sfr16 ADC0     = 0xBE;                 // ADC0 Data
 sfr16 ADC1     = 0xBE;                 // ADC1 Data
 
-#define SAMP_RATE          4000         // ADC sample rate in Hz
+#define SAMP_RATE          32000         // ADC sample rate in Hz
 
 //-----------------------------------------------------------------------------
 // Global Constants
 //-----------------------------------------------------------------------------
 
-#define BAUDRATE     115200            // Baud rate of UART in bps
+#define BAUDRATE     38400            // Baud rate of UART in bps
 
 // SYSTEMCLOCK = System clock frequency in Hz
 #define SYSTEMCLOCK       12000000L
@@ -211,8 +211,9 @@ void ADC0_Interrupt (void) interrupt 13
 
     adc0_sum += ADC0;
     adc0_cnt++;
-    if (adc0_cnt == 16) {
+    if (adc0_cnt == 64) {
 	UART0_Putchar(0x80);
+			adc0_sum >>= 1;
 	UART0_Putchar((adc0_sum >> 14) & 0x7F);
 	UART0_Putchar((adc0_sum >> 7) & 0x7F);
 	UART0_Putchar((adc0_sum >> 0) & 0x7F);
@@ -233,42 +234,18 @@ long adc1_sum = 0;
 unsigned short adc1_tmp[16];
 void ADC1_Interrupt (void) interrupt 15
 {
-    char i, j;
-    unsigned short tmp;
     SFRPAGE = ADC1_PAGE;                // Switch to ADC1 Page
     adc1_sum += ADC1;
     adc1_cnt++;
-    if (adc1_cnt == 16) {
+    if (adc1_cnt == 64) {
 	UART0_Putchar(0x81);
+			adc1_sum >>= 1;
 	UART0_Putchar((adc1_sum >> 14) & 0x7F);
 	UART0_Putchar((adc1_sum >> 7) & 0x7F);
 	UART0_Putchar((adc1_sum >> 0) & 0x7F);
 	adc1_cnt = 0;
 	adc1_sum = 0;
     }
-
-    //  adc1_sum += ADC1;
-    /* adc1_tmp[adc1_cnt] = ADC1; */
-    /* adc1_cnt++; */
-    /* if (adc1_cnt == 16) { */
-    /* 	for (i = 15; i >= 0; i--) { */
-    /* 	    for (j = 0; j < i; j++) { */
-    /* 		if (adc1_tmp[j] > adc1_tmp[j+1]) { */
-    /* 		    tmp = adc1_tmp[j]; */
-    /* 		    adc1_tmp[j] = adc1_tmp[j + 1]; */
-    /* 		    adc1_tmp[j + 1] = tmp; */
-    /* 		} */
-    /* 	    } */
-    /* 	} */
-    /* 	for ( i = 4; i < 12; i++) adc1_sum += adc1_tmp[i]; */
-    /* 	adc1_sum = (adc1_sum << 1); */
-    /* 	UART0_Putchar(0x81); */
-    /* 	UART0_Putchar((adc1_sum >> 14) & 0x7F); */
-    /* 	UART0_Putchar((adc1_sum >> 7) & 0x7F); */
-    /* 	UART0_Putchar((adc1_sum >> 0) & 0x7F); */
-    /* 	adc1_cnt = 0; */
-    /* 	adc1_sum = 0; */
-    /* } */
     AD1INT = 0 ;
 }
 //-----------------------------------------------------------------------------
@@ -508,6 +485,7 @@ void main (void)
 	    buf = UART0_Getchar();
 	    switch(state) {
 	    case 1:
+				
 		adc0_value = (buf << 11UL);
 		state++;
 		break;

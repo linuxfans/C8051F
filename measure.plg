@@ -3,7 +3,17 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-E:\C8051F\measure.uvproj
-Project File Date:  07/07/2012
+C:\Users\zhx\Documents\GitHub\C8051F\measure.uvproj
+Project File Date:  08/29/2012
 
 <h2>Output:</h2>
+Rebuild target 'Target 1'
+assembling STARTUP.A51...
+compiling main.c...
+linking...
+*** WARNING L15: MULTIPLE CALL TO SEGMENT
+    SEGMENT: ?PR?_UART0_PUTCHAR?MAIN
+    CALLER1: ?PR?ADC0_INTERRUPT?MAIN
+    CALLER2: ?PR?ADC1_INTERRUPT?MAIN
+Program Size: data=9.0 xdata=101 code=1906
+"measure" - 0 Error(s), 1 Warning(s).

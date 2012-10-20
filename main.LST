@@ -1,9 +1,9 @@
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 1   
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 1   
 
 
-C51 COMPILER V9.05, COMPILATION OF MODULE MAIN
+C51 COMPILER V9.50a, COMPILATION OF MODULE MAIN
 OBJECT MODULE PLACED IN main.OBJ
-COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE main.c BROWSE DEBUG OBJECTEXTEND
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c LARGE BROWSE DEBUG OBJECTEXTEND TABS(2)
 
 line level    source
 
@@ -21,13 +21,13 @@ line level    source
   12          sfr16 ADC0     = 0xBE;                 // ADC0 Data
   13          sfr16 ADC1     = 0xBE;                 // ADC1 Data
   14          
-  15          #define SAMP_RATE          4000         // ADC sample rate in Hz
+  15          #define SAMP_RATE          32000         // ADC sample rate in Hz
   16          
   17          //-----------------------------------------------------------------------------
   18          // Global Constants
   19          //-----------------------------------------------------------------------------
   20          
-  21          #define BAUDRATE     115200            // Baud rate of UART in bps
+  21          #define BAUDRATE     38400            // Baud rate of UART in bps
   22          
   23          // SYSTEMCLOCK = System clock frequency in Hz
   24          #define SYSTEMCLOCK       12000000L
@@ -53,18 +53,18 @@ line level    source
   44              unsigned char  buf [UART0_RBUF_SIZE];
   45          }UART0_RBUF_ST;
   46          
-  47          static  unsigned char   uart0_tx_rst    =       1;
+  47          static  unsigned char uart0_tx_rst  = 1;
   48          
   49          static unsigned int adc0_value;
   50          static unsigned int adc1_value;
   51          
-  52          static  UART0_RBUF_ST   uart0_rbuf      =       { 0, 0, };
-  53          static  UART0_TBUF_ST   uart0_tbuf      =       { 0, 0, };
-  54          #define UART0_RREADY    (uart0_rbuf.in != uart0_rbuf.out)
-  55          #define UART0_RBUFLEN   ((unsigned char)(uart0_rbuf.in - uart0_rbuf.out))
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 2   
+  52          static  UART0_RBUF_ST uart0_rbuf  = { 0, 0, };
+  53          static  UART0_TBUF_ST uart0_tbuf  = { 0, 0, };
+  54          #define UART0_RREADY  (uart0_rbuf.in != uart0_rbuf.out)
+  55          #define UART0_RBUFLEN ((unsigned char)(uart0_rbuf.in - uart0_rbuf.out))
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 2   
 
-  56          #define UART0_TBUFLEN   ((unsigned char)(uart0_tbuf.in - uart0_tbuf.out))
+  56          #define UART0_TBUFLEN ((unsigned char)(uart0_tbuf.in - uart0_tbuf.out))
   57          
   58          
   59          //------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ line level    source
  115   1          // source;
  116   1          ES0 = 1;
  117   1          IP |= 0x10;
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 3   
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 3   
 
  118   1      
  119   1          uart0_tbuf.in = 0;
@@ -157,24 +157,24 @@ line level    source
  144   1          SFRPAGE = UART0_PAGE;
  145   1          if (RI0 == 1)
  146   1          {
- 147   2              RI0 = 0;
- 148   2              p = (UART0_RBUF_ST*)&uart0_rbuf;
- 149   2              if (((p->in - p->out) & ~(UART0_RBUF_SIZE-1)) == 0){
- 150   3                  p->buf [p->in & (UART0_RBUF_SIZE-1)] = SBUF0;
- 151   3                  p->in++;
- 152   3              }
+ 147   2        RI0 = 0;
+ 148   2        p = (UART0_RBUF_ST*)&uart0_rbuf;
+ 149   2        if (((p->in - p->out) & ~(UART0_RBUF_SIZE-1)) == 0){
+ 150   3            p->buf [p->in & (UART0_RBUF_SIZE-1)] = SBUF0;
+ 151   3            p->in++;
+ 152   3        }
  153   2          }
  154   1          if (TI0 == 1)           // Check if transmit flag is set
  155   1          {
- 156   2              TI0 = 0;
- 157   2              p = (UART0_RBUF_ST*)&uart0_tbuf;
- 158   2              if (p->in != p->out) {
- 159   3                  SBUF0 = p->buf [p->out & (UART0_TBUF_SIZE-1)];
- 160   3                  p->out++;
- 161   3                  uart0_tx_rst = 0;
- 162   3              }else {
- 163   3                  uart0_tx_rst = 1;
- 164   3              }
+ 156   2        TI0 = 0;
+ 157   2        p = (UART0_RBUF_ST*)&uart0_tbuf;
+ 158   2        if (p->in != p->out) {
+ 159   3            SBUF0 = p->buf [p->out & (UART0_TBUF_SIZE-1)];
+ 160   3            p->out++;
+ 161   3            uart0_tx_rst = 0;
+ 162   3        }else {
+ 163   3            uart0_tx_rst = 1;
+ 164   3        }
  165   2          }
  166   1      }
  167          
@@ -186,15 +186,15 @@ line level    source
  173   1          SFRPAGE = UART0_PAGE;
  174   1          EA = 0;
  175   1          if (uart0_tx_rst) {
- 176   2              TI0 = 0;
- 177   2              uart0_tx_rst = 0;
- 178   2              SBUF0 = c;
+ 176   2        TI0 = 0;
+ 177   2        uart0_tx_rst = 0;
+ 178   2        SBUF0 = c;
  179   2          }
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 4   
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 4   
 
  180   1          else {
- 181   2              p->buf [p->in & (UART0_TBUF_SIZE - 1)] = c;
- 182   2              p->in++;
+ 181   2        p->buf [p->in & (UART0_TBUF_SIZE - 1)] = c;
+ 182   2        p->in++;
  183   2          }
  184   1          EA = 1;
  185   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
@@ -226,350 +226,325 @@ line level    source
  211   1      
  212   1          adc0_sum += ADC0;
  213   1          adc0_cnt++;
- 214   1          if (adc0_cnt == 16) {
- 215   2              UART0_Putchar(0x80);
- 216   2              UART0_Putchar((adc0_sum >> 14) & 0x7F);
- 217   2              UART0_Putchar((adc0_sum >> 7) & 0x7F);
- 218   2              UART0_Putchar((adc0_sum >> 0) & 0x7F);
- 219   2              adc0_cnt = 0;
- 220   2              adc0_sum = 0;
- 221   2          }
- 222   1          AD0INT = 0 ;
- 223   1      }
- 224          unsigned char adc1_cnt = 0;
- 225          long adc1_sum = 0;
- 226          //-----------------------------------------------------------------------------
- 227          // ADC1 Interrupt
- 228          //-----------------------------------------------------------------------------
- 229          //
- 230          // This routine is invoked whenever ADC1 converstion complet
- 231          //
- 232          //-----------------------------------------------------------------------------
- 233          unsigned short adc1_tmp[16];
- 234          void ADC1_Interrupt (void) interrupt 15
- 235          {
- 236   1          char i, j;
- 237   1          unsigned short tmp;
- 238   1          SFRPAGE = ADC1_PAGE;                // Switch to ADC1 Page
- 239   1          adc1_sum += ADC1;
- 240   1          adc1_cnt++;
- 241   1          if (adc1_cnt == 16) {
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 5   
+ 214   1          if (adc0_cnt == 64) {
+ 215   2        UART0_Putchar(0x80);
+ 216   2            adc0_sum >>= 1;
+ 217   2        UART0_Putchar((adc0_sum >> 14) & 0x7F);
+ 218   2        UART0_Putchar((adc0_sum >> 7) & 0x7F);
+ 219   2        UART0_Putchar((adc0_sum >> 0) & 0x7F);
+ 220   2        adc0_cnt = 0;
+ 221   2        adc0_sum = 0;
+ 222   2          }
+ 223   1          AD0INT = 0 ;
+ 224   1      }
+ 225          unsigned char adc1_cnt = 0;
+ 226          long adc1_sum = 0;
+ 227          //-----------------------------------------------------------------------------
+ 228          // ADC1 Interrupt
+ 229          //-----------------------------------------------------------------------------
+ 230          //
+ 231          // This routine is invoked whenever ADC1 converstion complet
+ 232          //
+ 233          //-----------------------------------------------------------------------------
+ 234          unsigned short adc1_tmp[16];
+ 235          void ADC1_Interrupt (void) interrupt 15
+ 236          {
+ 237   1          SFRPAGE = ADC1_PAGE;                // Switch to ADC1 Page
+ 238   1          adc1_sum += ADC1;
+ 239   1          adc1_cnt++;
+ 240   1          if (adc1_cnt == 64) {
+ 241   2        UART0_Putchar(0x81);
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 5   
 
- 242   2              UART0_Putchar(0x81);
- 243   2              UART0_Putchar((adc1_sum >> 14) & 0x7F);
- 244   2              UART0_Putchar((adc1_sum >> 7) & 0x7F);
- 245   2              UART0_Putchar((adc1_sum >> 0) & 0x7F);
- 246   2              adc1_cnt = 0;
- 247   2              adc1_sum = 0;
+ 242   2            adc1_sum >>= 1;
+ 243   2        UART0_Putchar((adc1_sum >> 14) & 0x7F);
+ 244   2        UART0_Putchar((adc1_sum >> 7) & 0x7F);
+ 245   2        UART0_Putchar((adc1_sum >> 0) & 0x7F);
+ 246   2        adc1_cnt = 0;
+ 247   2        adc1_sum = 0;
  248   2          }
- 249   1      
- 250   1          //  adc1_sum += ADC1;
- 251   1          /* adc1_tmp[adc1_cnt] = ADC1; */
- 252   1          /* adc1_cnt++; */
- 253   1          /* if (adc1_cnt == 16) { */
- 254   1          /*  for (i = 15; i >= 0; i--) { */
- 255   1          /*      for (j = 0; j < i; j++) { */
- 256   1          /*          if (adc1_tmp[j] > adc1_tmp[j+1]) { */
- 257   1          /*              tmp = adc1_tmp[j]; */
- 258   1          /*              adc1_tmp[j] = adc1_tmp[j + 1]; */
- 259   1          /*              adc1_tmp[j + 1] = tmp; */
- 260   1          /*          } */
- 261   1          /*      } */
- 262   1          /*  } */
- 263   1          /*  for ( i = 4; i < 12; i++) adc1_sum += adc1_tmp[i]; */
- 264   1          /*  adc1_sum = (adc1_sum << 1); */
- 265   1          /*  UART0_Putchar(0x81); */
- 266   1          /*  UART0_Putchar((adc1_sum >> 14) & 0x7F); */
- 267   1          /*  UART0_Putchar((adc1_sum >> 7) & 0x7F); */
- 268   1          /*  UART0_Putchar((adc1_sum >> 0) & 0x7F); */
- 269   1          /*  adc1_cnt = 0; */
- 270   1          /*  adc1_sum = 0; */
- 271   1          /* } */
- 272   1          AD1INT = 0 ;
- 273   1      }
-*** WARNING C280 IN LINE 236 OF main.c: 'i': unreferenced local variable
-*** WARNING C280 IN LINE 236 OF main.c: 'j': unreferenced local variable
-*** WARNING C280 IN LINE 237 OF main.c: 'tmp': unreferenced local variable
- 274          //-----------------------------------------------------------------------------
- 275          // OSCILLATOR_Init
- 276          //-----------------------------------------------------------------------------
- 277          //
- 278          // Return Value : None
- 279          // Parameters   : None
- 280          //
- 281          // This function initializes the system clock to use an external 22.1184MHz
- 282          // crystal.
- 283          //
- 284          //-----------------------------------------------------------------------------
- 285          void OSCILLATOR_Init (void)
- 286          {
- 287   1          int i;                              // Software timer
- 288   1      
- 289   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
- 290   1      
- 291   1          SFRPAGE = CONFIG_PAGE;              // Set SFR page
- 292   1      
- 293   1          OSCICN = 0x80;                      // Set internal oscillator to run
- 294   1          // at its slowest frequency
- 295   1      
- 296   1          CLKSEL = 0x00;                      // Select the internal osc. as
- 297   1          // the SYSTEMCLOCK source
- 298   1      
- 299   1          // Initialize external crystal oscillator to use 22.1184 MHz crystal
- 300   1      
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 6   
-
- 301   1          OSCXCN = 0x67;                      // Enable external crystal osc.
- 302   1          for (i=0; i < 256; i++);            // Wait at least 1ms
+ 249   1          AD1INT = 0 ;
+ 250   1      }
+ 251          //-----------------------------------------------------------------------------
+ 252          // OSCILLATOR_Init
+ 253          //-----------------------------------------------------------------------------
+ 254          //
+ 255          // Return Value : None
+ 256          // Parameters   : None
+ 257          //
+ 258          // This function initializes the system clock to use an external 22.1184MHz
+ 259          // crystal.
+ 260          //
+ 261          //-----------------------------------------------------------------------------
+ 262          void OSCILLATOR_Init (void)
+ 263          {
+ 264   1          int i;                              // Software timer
+ 265   1      
+ 266   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+ 267   1      
+ 268   1          SFRPAGE = CONFIG_PAGE;              // Set SFR page
+ 269   1      
+ 270   1          OSCICN = 0x80;                      // Set internal oscillator to run
+ 271   1          // at its slowest frequency
+ 272   1      
+ 273   1          CLKSEL = 0x00;                      // Select the internal osc. as
+ 274   1          // the SYSTEMCLOCK source
+ 275   1      
+ 276   1          // Initialize external crystal oscillator to use 22.1184 MHz crystal
+ 277   1      
+ 278   1          OSCXCN = 0x67;                      // Enable external crystal osc.
+ 279   1          for (i=0; i < 256; i++);            // Wait at least 1ms
+ 280   1      
+ 281   1          while (!(OSCXCN & 0x80));           // Wait for crystal osc to settle
+ 282   1      
+ 283   1          CLKSEL = 0x01;
+ 284   1          // Select external crystal as SYSTEMCLOCK source
+ 285   1      
+ 286   1          OSCICN = 0x00;                      // disable internal oscillator
+ 287   1      
+ 288   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
+ 289   1      }
+ 290          
+ 291          //------------------------------------------------------------------------------------
+ 292          // Timer3_Init
+ 293          //------------------------------------------------------------------------------------
+ 294          //
+ 295          // Configure Timer3 to auto-reload and generate ADC sample rate
+ 296          // specified by <counts> using SYSCLK as its time base.
+ 297          //
+ 298          void Timer3_Init (int counts)
+ 299          {
+ 300   1          char old_SFRPAGE = SFRPAGE;
+ 301   1      
+ 302   1          SFRPAGE = TMR3_PAGE;                // Switch to Timer 3 page
  303   1      
- 304   1          while (!(OSCXCN & 0x80));           // Wait for crystal osc to settle
- 305   1      
- 306   1          CLKSEL = 0x01;
- 307   1          // Select external crystal as SYSTEMCLOCK source
- 308   1      
- 309   1          OSCICN = 0x00;                      // disable internal oscillator
- 310   1      
- 311   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFRPAGE
- 312   1      }
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 6   
+
+ 304   1          TMR3CN = 0x00;                      // Stop Timer3; Clear TF3;
+ 305   1          TMR3CF = 0x08;                      // use SYSCLK as timebase
+ 306   1          RCAP3   = -counts;                  // Init reload values
+ 307   1          TMR3    = 0xffff;                   // set to reload immediately
+ 308   1          TR3 = 1;                            // start Timer3
+ 309   1      
+ 310   1          SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
+ 311   1      }
+ 312          
  313          
- 314          //------------------------------------------------------------------------------------
- 315          // Timer3_Init
- 316          //------------------------------------------------------------------------------------
- 317          //
- 318          // Configure Timer3 to auto-reload and generate ADC sample rate
- 319          // specified by <counts> using SYSCLK as its time base.
- 320          //
- 321          void Timer3_Init (int counts)
- 322          {
- 323   1          char old_SFRPAGE = SFRPAGE;
- 324   1      
- 325   1          SFRPAGE = TMR3_PAGE;                // Switch to Timer 3 page
- 326   1      
- 327   1          TMR3CN = 0x00;                      // Stop Timer3; Clear TF3;
- 328   1          TMR3CF = 0x08;                      // use SYSCLK as timebase
- 329   1          RCAP3   = -counts;                  // Init reload values
- 330   1          TMR3    = 0xffff;                   // set to reload immediately
- 331   1          TR3 = 1;                            // start Timer3
- 332   1      
- 333   1          SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
- 334   1      }
- 335          
- 336          
- 337          //-----------------------------------------------------------------------------
- 338          // ADC0_Init
+ 314          //-----------------------------------------------------------------------------
+ 315          // ADC0_Init
+ 316          //-----------------------------------------------------------------------------
+ 317          void ADC0_Init (void)
+ 318          {
+ 319   1          char old_SFRPAGE = SFRPAGE;
+ 320   1          int i;
+ 321   1      
+ 322   1          SFRPAGE = ADC0_PAGE;                // Switch to ADC0 Page
+ 323   1      
+ 324   1          ADC0CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
+ 325   1          // track 16 SAR clocks before data conversion
+ 326   1          // upon Timer3 OV.  Enable ADC0
+ 327   1      
+ 328   1          REF0CN = 0x02;                      // turn on bias generator, turn off internal reference.
+ 329   1      
+ 330   1          for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
+ 331   1      
+ 332   1          AMX0SL = 0x00;                      // Single-ended mode
+ 333   1      
+ 334   1          ADC0CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
+ 335   1      
+ 336   1          EIE1 |= 0x80;   /* Enable ADC0 interrupt */
+ 337   1          SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
+ 338   1      }
  339          //-----------------------------------------------------------------------------
- 340          void ADC0_Init (void)
- 341          {
- 342   1          char old_SFRPAGE = SFRPAGE;
- 343   1          int i;
- 344   1      
- 345   1          SFRPAGE = ADC0_PAGE;                // Switch to ADC0 Page
+ 340          // ADC1_Init
+ 341          //-----------------------------------------------------------------------------
+ 342          void ADC1_Init (void)
+ 343          {
+ 344   1          char old_SFRPAGE = SFRPAGE;
+ 345   1          int i;
  346   1      
- 347   1          ADC0CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
- 348   1          // track 16 SAR clocks before data conversion
- 349   1          // upon Timer3 OV.  Enable ADC0
- 350   1      
- 351   1          REF0CN = 0x02;                      // turn on bias generator, turn off internal reference.
+ 347   1          SFRPAGE = ADC1_PAGE;                // Switch to ADC0 Page
+ 348   1      
+ 349   1          ADC1CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
+ 350   1          // track 16 SAR clocks before data conversion
+ 351   1          // upon Timer3 OV.  Enable ADC0
  352   1      
- 353   1          for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
+ 353   1          REF1CN = 0x02;                      // turn on bias generator, turn of internal reference.
  354   1      
- 355   1          AMX0SL = 0x00;                      // Single-ended mode
+ 355   1          for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
  356   1      
- 357   1          ADC0CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
+ 357   1          ADC1CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
  358   1      
- 359   1          EIE1 |= 0x80;               /* Enable ADC0 interrupt */
+ 359   1          EIE2 |= 0x02;     /* Enable ADC0 interrupt */
  360   1          SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
  361   1      }
- 362          //-----------------------------------------------------------------------------
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 7   
+ 362          
+ 363          //-----------------------------------------------------------------------------
+ 364          // DAC0_Init
+ 365          //-----------------------------------------------------------------------------
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 7   
 
- 363          // ADC1_Init
- 364          //-----------------------------------------------------------------------------
- 365          void ADC1_Init (void)
- 366          {
- 367   1          char old_SFRPAGE = SFRPAGE;
- 368   1          int i;
- 369   1      
- 370   1          SFRPAGE = ADC1_PAGE;                // Switch to ADC0 Page
- 371   1      
- 372   1          ADC1CN = 0xC4;                      // ADC Disabled, Timer3 start-of-conversion
- 373   1          // track 16 SAR clocks before data conversion
- 374   1          // upon Timer3 OV.  Enable ADC0
- 375   1      
- 376   1          REF1CN = 0x02;                      // turn on bias generator, turn of internal reference.
- 377   1      
- 378   1          for(i=0;i<10000;i++);               // Wait for Vref to settle (large cap used on target board)
- 379   1      
- 380   1          ADC1CF = (SYSCLK/12000000) << 4;    // Select SAR clock frequency =~ 12MHz
- 381   1      
- 382   1          EIE2 |= 0x02;                       /* Enable ADC0 interrupt */
- 383   1          SFRPAGE = old_SFRPAGE;              // restore SFRPAGE
- 384   1      }
- 385          
- 386          //-----------------------------------------------------------------------------
- 387          // DAC0_Init
- 388          //-----------------------------------------------------------------------------
- 389          //
- 390          // Return Value : None
- 391          // Parameters   : None
- 392          //
- 393          // Configure DAC0 to update on Timer4 overflows and enable the the VREF buffer.
- 394          //
- 395          //-----------------------------------------------------------------------------
- 396          
- 397          void DAC0_Init(void)
- 398          {
- 399   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
- 400   1          adc0_value = 0x81E0;
- 401   1      
- 402   1          SFRPAGE = DAC0_PAGE;
- 403   1         
- 404   1          DAC0CN = 0x84;                      // Enable DAC0 in left-justified mode
- 405   1      
- 406   1          SFRPAGE = ADC2_PAGE;
- 407   1      
- 408   1          REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
- 409   1          // the Bias Generator
+ 366          //
+ 367          // Return Value : None
+ 368          // Parameters   : None
+ 369          //
+ 370          // Configure DAC0 to update on Timer4 overflows and enable the the VREF buffer.
+ 371          //
+ 372          //-----------------------------------------------------------------------------
+ 373          
+ 374          void DAC0_Init(void)
+ 375          {
+ 376   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+ 377   1          adc0_value = 0x81E0;
+ 378   1      
+ 379   1          SFRPAGE = DAC0_PAGE;
+ 380   1         
+ 381   1          DAC0CN = 0x84;                      // Enable DAC0 in left-justified mode
+ 382   1      
+ 383   1          SFRPAGE = ADC2_PAGE;
+ 384   1      
+ 385   1          REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
+ 386   1          // the Bias Generator
+ 387   1      
+ 388   1          DAC0L = adc0_value & 0xFF;
+ 389   1          DAC0H = (adc0_value >> 8) & 0xFF;
+ 390   1      
+ 391   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+ 392   1      }
+ 393          
+ 394          //-----------------------------------------------------------------------------
+ 395          // DAC1_Init
+ 396          //-----------------------------------------------------------------------------
+ 397          //
+ 398          // Return Value : None
+ 399          // Parameters   : None
+ 400          //
+ 401          // Configure DAC1 to update on Timer4 overflows and enable the the VREF buffer.
+ 402          //
+ 403          //-----------------------------------------------------------------------------
+ 404          
+ 405          void DAC1_Init(void)
+ 406          {
+ 407   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+ 408   1      
+ 409   1          adc1_value = 0x100;
  410   1      
- 411   1          DAC0L = adc0_value & 0xFF;
- 412   1          DAC0H = (adc0_value >> 8) & 0xFF;
- 413   1      
- 414   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
- 415   1      }
- 416          
- 417          //-----------------------------------------------------------------------------
- 418          // DAC1_Init
- 419          //-----------------------------------------------------------------------------
- 420          //
- 421          // Return Value : None
- 422          // Parameters   : None
- 423          //
- 424          // Configure DAC1 to update on Timer4 overflows and enable the the VREF buffer.
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 8   
+ 411   1          SFRPAGE = DAC1_PAGE;
+ 412   1         
+ 413   1          DAC1CN = 0x84;                      // Enable DAC1 in left-justified mode
+ 414   1      
+ 415   1          SFRPAGE = ADC2_PAGE;
+ 416   1      
+ 417   1          REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
+ 418   1          // the Bias Generator
+ 419   1      
+ 420   1          DAC1L = adc1_value & 0xFF;
+ 421   1          DAC1H = (adc1_value >> 8) & 0xFF;
+ 422   1      
+ 423   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+ 424   1      }
+ 425          
+ 426          void Set_DACs(void)
+ 427          {
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 8   
 
- 425          //
- 426          //-----------------------------------------------------------------------------
- 427          
- 428          void DAC1_Init(void)
- 429          {
- 430   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
- 431   1      
- 432   1          adc1_value = 0x100;
- 433   1      
- 434   1          SFRPAGE = DAC1_PAGE;
- 435   1         
- 436   1          DAC1CN = 0x84;                      // Enable DAC1 in left-justified mode
- 437   1      
- 438   1          SFRPAGE = ADC2_PAGE;
- 439   1      
- 440   1          REF2CN |= 0x03;                     // Enable the internal VREF (2.4v) and
- 441   1          // the Bias Generator
- 442   1      
- 443   1          DAC1L = adc1_value & 0xFF;
- 444   1          DAC1H = (adc1_value >> 8) & 0xFF;
- 445   1      
- 446   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
- 447   1      }
- 448          
- 449          void Set_DACs(void)
- 450          {
- 451   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
- 452   1         
- 453   1          // Add a DC bias to change the the rails from a bipolar (-32768 to 32767)
- 454   1          // to unipolar (0 to 65535)
- 455   1          // Note: the XOR with 0x8000 translates the bipolar quantity into
- 456   1          // a unipolar quantity.
- 457   1         
- 458   1      
- 459   1          SFRPAGE = DAC0_PAGE;
- 460   1          //   DAC0 = 0x8000 ^ 0x4600;           // Write to DAC0
- 461   1      
- 462   1          DAC0L = adc0_value & 0xFF;
- 463   1          DAC0H = (adc0_value >> 8) & 0xFF;
- 464   1      
- 465   1          SFRPAGE = DAC1_PAGE;
- 466   1          //   DAC1 = 0x8000 ^ 0xa600;           // Write to DAC1
- 467   1          DAC1L = adc1_value & 0xFF;
- 468   1          DAC1H = (adc1_value >> 8) & 0xFF;
- 469   1      
- 470   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
- 471   1      }
- 472          
- 473          //-----------------------------------------------------------------------------
- 474          // End Of File
- 475          //-----------------------------------------------------------------------------
- 476          
- 477          
- 478          
- 479          //-----------------------------------------------------------------------------
- 480          // MAIN Routine
- 481          //-----------------------------------------------------------------------------
- 482          void main (void) 
- 483          {
- 484   1          char state;
- 485   1          unsigned int buf;
- 486   1          WDTCN = 0xDE;                       // disable watchdog timer
-C51 COMPILER V9.05   MAIN                                                                  07/07/2012 18:41:43 PAGE 9   
+ 428   1          char SFRPAGE_SAVE = SFRPAGE;        // Save Current SFR page
+ 429   1         
+ 430   1          // Add a DC bias to change the the rails from a bipolar (-32768 to 32767)
+ 431   1          // to unipolar (0 to 65535)
+ 432   1          // Note: the XOR with 0x8000 translates the bipolar quantity into
+ 433   1          // a unipolar quantity.
+ 434   1         
+ 435   1      
+ 436   1          SFRPAGE = DAC0_PAGE;
+ 437   1          //   DAC0 = 0x8000 ^ 0x4600;           // Write to DAC0
+ 438   1      
+ 439   1          DAC0L = adc0_value & 0xFF;
+ 440   1          DAC0H = (adc0_value >> 8) & 0xFF;
+ 441   1      
+ 442   1          SFRPAGE = DAC1_PAGE;
+ 443   1          //   DAC1 = 0x8000 ^ 0xa600;           // Write to DAC1
+ 444   1          DAC1L = adc1_value & 0xFF;
+ 445   1          DAC1H = (adc1_value >> 8) & 0xFF;
+ 446   1      
+ 447   1          SFRPAGE = SFRPAGE_SAVE;             // Restore SFR page
+ 448   1      }
+ 449          
+ 450          //-----------------------------------------------------------------------------
+ 451          // End Of File
+ 452          //-----------------------------------------------------------------------------
+ 453          
+ 454          
+ 455          
+ 456          //-----------------------------------------------------------------------------
+ 457          // MAIN Routine
+ 458          //-----------------------------------------------------------------------------
+ 459          void main (void) 
+ 460          {
+ 461   1          char state;
+ 462   1          unsigned int buf;
+ 463   1          WDTCN = 0xDE;                       // disable watchdog timer
+ 464   1          WDTCN = 0xAD;
+ 465   1      
+ 466   1          SFRPAGE = CONFIG_PAGE;
+ 467   1      
+ 468   1          DAC0_Init ();                       // Initialize DAC0
+ 469   1          DAC1_Init ();                       // Initialize DAC1   
+ 470   1          OSCILLATOR_Init ();                 // Initialize oscillator
+ 471   1      
+ 472   1          UART0_Init ();                      // Initialize UART0
+ 473   1      
+ 474   1          Timer3_Init (SYSCLK/SAMP_RATE);        // Init Timer3 for 16ksps sample rate
+ 475   1      
+ 476   1          ADC0_Init();
+ 477   1          ADC1_Init();
+ 478   1      
+ 479   1          Set_DACs();
+ 480   1      
+ 481   1          EA = 1;                             // Enable global interrupts
+ 482   1      
+ 483   1          while(1) {
+ 484   2        if ( UART0_RREADY ) {
+ 485   3            buf = UART0_Getchar();
+ 486   3            switch(state) {
+ 487   4            case 1:
+ 488   4              
+ 489   4          adc0_value = (buf << 11UL);
+C51 COMPILER V9.50a   MAIN                                                                 09/01/2012 19:22:33 PAGE 9   
 
- 487   1          WDTCN = 0xAD;
- 488   1      
- 489   1          SFRPAGE = CONFIG_PAGE;
- 490   1      
- 491   1          DAC0_Init ();                       // Initialize DAC0
- 492   1          DAC1_Init ();                       // Initialize DAC1   
- 493   1          OSCILLATOR_Init ();                 // Initialize oscillator
- 494   1      
- 495   1          UART0_Init ();                      // Initialize UART0
- 496   1      
- 497   1          Timer3_Init (SYSCLK/SAMP_RATE);        // Init Timer3 for 16ksps sample rate
- 498   1      
- 499   1          ADC0_Init();
- 500   1          ADC1_Init();
- 501   1      
- 502   1          Set_DACs();
- 503   1      
- 504   1          EA = 1;                             // Enable global interrupts
- 505   1      
- 506   1          while(1) {
- 507   2              if ( UART0_RREADY ) {
- 508   3                  buf = UART0_Getchar();
- 509   3                  switch(state) {
- 510   4                  case 1:
- 511   4                      adc0_value = (buf << 11UL);
- 512   4                      state++;
- 513   4                      break;
- 514   4                  case 2:
- 515   4                      adc0_value |= (buf << 4UL);
- 516   4                      Set_DACs();
- 517   4                      state = 0;
- 518   4                      break;
- 519   4                  case 3:
- 520   4                      adc1_value = (buf << 11UL);
- 521   4                      state++;
- 522   4                      break;
- 523   4                  case 4:
- 524   4                      adc1_value |= (buf << 4UL);
- 525   4                      state = 0;
- 526   4                      Set_DACs();
- 527   4                      break;
- 528   4                  }
- 529   3                  if ( buf == 0x80 ) state = 1;
- 530   3                  if ( buf == 0x81 ) state = 3;
- 531   3              }
- 532   2          }
- 533   1      }
+ 490   4          state++;
+ 491   4          break;
+ 492   4            case 2:
+ 493   4          adc0_value |= (buf << 4UL);
+ 494   4          Set_DACs();
+ 495   4          state = 0;
+ 496   4          break;
+ 497   4            case 3:
+ 498   4          adc1_value = (buf << 11UL);
+ 499   4          state++;
+ 500   4          break;
+ 501   4            case 4:
+ 502   4          adc1_value |= (buf << 4UL);
+ 503   4          state = 0;
+ 504   4          Set_DACs();
+ 505   4          break;
+ 506   4            }
+ 507   3            if ( buf == 0x80 ) state = 1;
+ 508   3            if ( buf == 0x81 ) state = 3;
+ 509   3        }
+ 510   2          }
+ 511   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1105    ----
+   CODE SIZE        =   1378    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =     87      10
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     87      13
+   DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
 
 
-C51 COMPILATION COMPLETE.  3 WARNING(S),  0 ERROR(S)
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
